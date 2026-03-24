@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
+      - name: Build release binary
+        run: swift build -c release --disable-sandbox
+
+      - name: Determine version
+        id: version
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp .build/arm64-apple-macosx/release/hex-cli dist/
+          cd dist && tar czf hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz hex-cli
+          shasum -a 256 hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz > hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz
+            dist/hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz.sha256
+
+      - name: Update Homebrew tap
+        if: github.repository_owner == github.actor
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN not set, skipping tap update"
+            exit 0
+          fi
+          SHA=$(cat dist/hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz.sha256 | awk '{print $1}')
+          VERSION="${{ steps.version.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          TAG="${{ steps.version.outputs.tag }}"
+          REPO="${{ github.repository }}"
+
+          # Clone tap, update formula, push
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/homebrew-tap.git" /tmp/tap
+          cat > /tmp/tap/Formula/hex-cli.rb <<FORMULA
+          class HexCli < Formula
+            desc "On-device audio transcription CLI (WhisperKit + Parakeet)"
+            homepage "https://github.com/${REPO}"
+            url "https://github.com/${REPO}/releases/download/${TAG}/hex-cli-${TAG}-arm64-apple-macosx.tar.gz"
+            sha256 "${SHA}"
+            version "${VERSION}"
+            license "MIT"
+
+            depends_on :macos
+            depends_on macos: :sequoia
+
+            def install
+              bin.install "hex-cli"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/hex-cli --version").strip
+            end
+          end
+          FORMULA
+
+          cd /tmp/tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/hex-cli.rb
+          git commit -m "hex-cli ${VERSION}" || true
+          git push

@@ -21,5 +21,12 @@ let package = Package(
                 .product(name: "FluidAudio", package: "FluidAudio"),
             ]
         ),
+        .testTarget(
+            name: "HexCLITests",
+            dependencies: [],
+            resources: [
+                .copy("Fixtures"),
+            ]
+        ),
     ]
 )

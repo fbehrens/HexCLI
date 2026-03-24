@@ -23,7 +23,8 @@ struct HexCLI: AsyncParsableCommand {
               hex-cli --model openai_whisper-large-v3 interview.mp3
               hex-cli --progress long-meeting.m4a
               hex-cli --json recording.wav
-            """
+            """,
+        version: hexCLIVersion
     )
 
     @Argument(help: "Path to the audio file to transcribe")

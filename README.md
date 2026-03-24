@@ -7,13 +7,20 @@ On-device audio transcription and speaker diarization for macOS. Uses Apple Neur
 - **Parakeet** (FluidAudio) — TDT 0.6B, multilingual, default
 - **WhisperKit** — OpenAI Whisper models via CoreML
 
-## Build
+## Install
+
+```bash
+brew tap fbehrens/tap
+brew install hex-cli
+```
+
+Or build from source:
 
 ```bash
 swift build -c release
+# or
+make install          # builds release + copies to /usr/local/bin
 ```
-
-Binary: `.build/arm64-apple-macosx/release/hex-cli`
 
 Requires Swift 6.0+, macOS 15+.
 
@@ -127,6 +134,56 @@ The pipeline runs four stages:
 - Automatically determines number of speakers
 
 **Performance:** 17.7% DER on AMI dataset. ~141x realtime on M1.
+
+## Testing
+
+Uses [Swift Testing](https://developer.apple.com/documentation/testing) with E2E tests that exercise the real binary via `Process`.
+
+```bash
+swift test                    # run all non-smoke tests
+HEX_SMOKE=1 swift test       # include transcription smoke tests (needs models downloaded)
+```
+
+### Test suites
+
+**CLI argument handling** — validates the binary's interface without downloading models:
+
+| Test | Verifies |
+|------|----------|
+| `--help` | Prints `USAGE` banner, exits 0 |
+| `--version` | Prints semver (`x.y.z`), exits 0 |
+| No arguments | Exits non-zero, stderr mentions missing audio file |
+| Non-existent file | Exits non-zero, stderr says "not found" |
+| Invalid model name | Exits non-zero on unknown model |
+| `--json --help` | `--json` flag accepted by the parser |
+| `--diarize --help` | `--diarize` flag accepted by the parser |
+
+**Model listing** — requires network on first run to fetch the WhisperKit model catalog:
+
+| Test | Verifies |
+|------|----------|
+| `--list-models` sections | Output contains "Parakeet" and "WhisperKit" headings + default model ID |
+| `--list-models` default | Output contains "(default)" marker |
+
+**Transcription smoke tests** — gated behind `HEX_SMOKE=1` (needs models cached locally):
+
+| Test | Verifies |
+|------|----------|
+| Plain text | Transcribing `audio.wav` produces non-empty stdout |
+| JSON output | `--json` output parses as JSON with `text`, `words`, `duration`, `model`, `timestamp` keys |
+
+## Versioning
+
+Single source of truth: `Sources/HexCLI/Version.swift`. Exposed via `hex-cli --version`.
+
+To cut a release:
+
+```bash
+make tag VERSION=0.2.0        # bumps Version.swift, commits, creates git tag
+git push origin main --tags   # triggers GitHub Actions release workflow
+```
+
+The release workflow builds an arm64 binary, creates a GitHub Release with the tarball + sha256, and auto-updates the Homebrew tap formula.
 
 ## Performance
 
