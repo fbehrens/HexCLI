@@ -25,9 +25,10 @@ jobs:
 
       - name: Package binary
         run: |
-          mkdir -p dist
+          mkdir -p dist/completions
           cp .build/arm64-apple-macosx/release/hex-cli dist/
-          cd dist && tar czf hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz hex-cli
+          cp completions/hex-cli.fish dist/completions/
+          cd dist && tar czf hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz hex-cli completions/
           shasum -a 256 hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz > hex-cli-${{ steps.version.outputs.tag }}-arm64-apple-macosx.tar.gz.sha256
 
       - name: Create GitHub Release
@@ -69,6 +70,7 @@ jobs:
 
             def install
               bin.install "hex-cli"
+              fish_completion.install "completions/hex-cli.fish"
             end
 
             test do

@@ -1,0 +1,19 @@
+{
+  "name": "hex-cli",
+  "version": "0.1.1",
+  "description": "Release metadata + changelog automation for hex-cli.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "changeset": "changeset",
+    "changeset:add": "changeset add",
+    "changeset:add-ai": "bun run tools/add-changeset.ts",
+    "changeset:status": "changeset status --verbose",
+    "changeset:version": "changeset version",
+    "release": "bun run tools/release.ts"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0"
+  }
+}

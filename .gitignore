@@ -5,3 +5,4 @@ xcuserdata/
 DerivedData/
 *.xcodeproj/xcuserdata/
 dist/
+node_modules/

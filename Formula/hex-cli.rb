@@ -20,6 +20,7 @@ class HexCli < Formula
 
   def install
     bin.install "hex-cli"
+    fish_completion.install "completions/hex-cli.fish"
   end
 
   test do
