@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:HexCLI}",
+            "name": "Debug hex-cli",
+            "target": "hex-cli",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug hex-cli"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:HexCLI}",
+            "name": "Release hex-cli",
+            "target": "hex-cli",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release hex-cli"
+        }
+    ]
+}
